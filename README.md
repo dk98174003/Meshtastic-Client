@@ -6,10 +6,12 @@ This project provides an intuitive graphical interface to connect via IP, USB or
 Built entirely in **Python**, it features:
 
 * Real-time node list with distance, hops, and last-heard info
-* Message send/receive window
+* Message send/receive for the channels public and direct
 * Support for light and dark themes
 * Direct IP, USB and Bluetooth connection support
 * Auto-refresh and status bar with node count
+* Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” messages with “pong”
+* Displays telemetry and position status messages directly in the message feed
 
 Standalone Windows GUI for their Meshtastic devices.
 
