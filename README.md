@@ -15,6 +15,78 @@ Standalone Windows GUI for their Meshtastic devices.
 
 <img width="1423" height="784" alt="billede" src="https://github.com/user-attachments/assets/d553a760-7b45-41eb-bbcf-dfd6da4d6f7e" />
 
+
+### 🧰 Installation & Setup (Windows)
+
+1. **Install Python 3.10 or newer**
+
+   * Download from [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
+   * ✅ During setup, **check “Add Python to PATH”**.
+   * After installation, open **Command Prompt** and verify:
+
+     ```cmd
+     python --version
+     pip --version
+     ```
+
+2. **Upgrade pip and install all required dependencies**
+
+   ```cmd
+   python -m pip install --upgrade pip
+   pip install --upgrade meshtastic pyserial bleak pypubsub dotmap timeago requests pyyaml tabulate packaging
+   ```
+
+   **Dependency overview**
+
+   | Package      | Purpose                                      |
+   | ------------ | -------------------------------------------- |
+   | `meshtastic` | Core library for TCP / USB / BLE connections |
+   | `pyserial`   | Enables USB / Serial communication           |
+   | `bleak`      | Bluetooth Low Energy support                 |
+   | `pypubsub`   | Event/pub-sub messaging used by the library  |
+   | `dotmap`     | Easy access to nested dictionaries           |
+   | `timeago`    | Human-readable time display                  |
+   | `requests`   | HTTP utilities (used internally)             |
+   | `pyyaml`     | Configuration and serialization              |
+   | `tabulate`   | CLI table output                             |
+   | `packaging`  | Version comparison utilities                 |
+
+3. **Install USB drivers (if using Serial/USB connection)**
+
+   * Install **Silicon Labs CP210x** or **CH9102** drivers, depending on your device.
+   * Official driver links:
+
+     * [CP210x Windows Drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
+     * [CH9102 Windows Drivers](https://www.wch.cn/downloads/CH9102_Windows_Driver.html)
+
+4. **(Optional) Clone the official Meshtastic Python repository**
+
+   ```cmd
+   git clone https://github.com/meshtastic/python.git
+   ```
+
+   👉 [https://github.com/meshtastic/python](https://github.com/meshtastic/python)
+
+5. **Download this GUI client**
+   Place `meshtastic_client.py` (your version) in a folder such as
+   `C:\Users\<YourName>\MeshtasticClient`
+
+6. **Run the program**
+
+   ```cmd
+   cd C:\Users\<YourName>\MeshtasticClient
+   python meshtastic_client.py
+   ```
+
+7. **Connect your Meshtastic device**
+
+   * **Connection → Connect (TCP)** — for Wi-Fi / Ethernet connections
+   * **Connection → Connect via USB/Serial…** — for direct cable connection
+   * **Connection → Connect via Bluetooth…** — scan and pair over BLE
+
+8. **(Optional)** Enable Bluetooth in Windows Settings → Bluetooth & devices → “Add device” to ensure permissions.
+
+
 Have fun
 
 Knud ;O)
