@@ -95,4 +95,6 @@ The exe file is also available ready to use (you not need to install Python firs
 
 Have fun
 
+PS. Use IP or serial - bluetooth is slow.
+
 Knud ;O)
