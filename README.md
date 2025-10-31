@@ -10,7 +10,7 @@ Built entirely in **Python**, it features:
 * Support for light and dark themes
 * Direct IP, USB and Bluetooth connection support
 * Auto-refresh and status bar with node count
-* Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” messages with “pong”
+* Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
 * Displays telemetry and position status messages directly in the message feed
 
 Standalone Windows GUI for their Meshtastic devices.
