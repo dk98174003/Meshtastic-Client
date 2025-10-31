@@ -13,3 +13,6 @@ Built entirely in **Python**, it features:
 
 Standalone Windows GUI for their Meshtastic devices.
 <img width="1423" height="784" alt="billede" src="https://github.com/user-attachments/assets/d553a760-7b45-41eb-bbcf-dfd6da4d6f7e" />
+
+Have fun
+Knud ;O)
