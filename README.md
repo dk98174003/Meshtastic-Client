@@ -89,6 +89,8 @@ Standalone Windows GUI for their Meshtastic devices.
 8. **(Optional)** Enable Bluetooth in Windows Settings → Bluetooth & devices → “Add device” to ensure permissions.
 
 
+The exe file is also available ready to use (you not need to install Python first).
+
 Have fun
 
 Knud ;O)
