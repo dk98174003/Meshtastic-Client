@@ -43,7 +43,7 @@ HOST_DEFAULT = "192.168.0.156"
 PORT_DEFAULT = 4403
 
 PROJECT_PATH = pathlib.Path(__file__).parent
-ICON_PATH = PROJECT_PATH / "meshtastic.png"
+ICON_PATH = PROJECT_PATH / "meshtastic.ico"
 
 
 def _fmt_ago(epoch_seconds: Optional[float]) -> str:
@@ -72,8 +72,7 @@ class MeshtasticGUI:
         # icon
         try:
             if ICON_PATH.exists():
-                self._icon = tk.PhotoImage(file=str(ICON_PATH))
-                self.root.iconphoto(True, self._icon)
+                self.root.iconbitmap(default=str(ICON_PATH))
         except Exception as e:
             print("Icon load failed:", e)
 
