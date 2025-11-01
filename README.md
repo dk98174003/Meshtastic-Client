@@ -88,7 +88,7 @@ Standalone Windows GUI for their Meshtastic devices.
    * **Connection → Connect via USB/Serial…** — for direct cable connection
    * **Connection → Connect via Bluetooth…** — scan and pair over BLE
 
-8. **(Optional)** Enable Bluetooth in Windows Settings → Bluetooth & devices → “Add device” to ensure permissions.
+8. **Enable Bluetooth in Windows Settings → Bluetooth & devices → “Add device” to ensure permissions.
 
 
 The exe file is also available ready to use (you not need to install Python first).
