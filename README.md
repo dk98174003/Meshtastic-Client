@@ -94,6 +94,58 @@ Standalone Windows GUI for their Meshtastic devices.
 8. **Enable Bluetooth in Windows Settings → Bluetooth & devices → “Add device” to ensure permissions.
 
 
+
+Here’s a short **GitHub installation & run description** for your `meshtastic_client.py` on Raspberry Pi OS (Trixie):
+
+---
+
+### 🐍 Meshtastic Client for Raspberry Pi OS Trixie (linux)
+
+**Description:**
+A Python GUI client for Meshtastic devices running fully offline on Raspberry Pi OS Trixie (Debian 13).
+Connect via USB or Bluetooth, send and receive messages, and view node info in real time.
+
+---
+
+### ⚙️ Installation
+
+```bash
+sudo apt update
+sudo apt install -y python3-full python3-venv bluetooth bluez bluez-tools python3-serial git
+git clone https://github.com/<yourname>/meshtastic_client.git
+cd meshtastic_client
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+pip install "meshtastic[cli]" pyserial bleak pypubsub dotmap timeago requests pyyaml tabulate packaging
+```
+
+Add user to serial groups:
+
+```bash
+sudo usermod -aG dialout $USER
+sudo usermod -aG tty $USER
+# log out and back in
+```
+
+---
+
+### ▶️ Run
+
+```bash
+source venv/bin/activate
+python3 meshtastic_client.py
+```
+
+---
+
+### 🧩 Notes
+
+* Works on Raspberry Pi 4/5 with Raspberry Pi OS Bookworm/Trixie.
+* No internet connection required after setup.
+* To exit the virtual environment: `deactivate`.
+
+
 Have fun
 
 PS. Use IP or serial - bluetooth is slow.
