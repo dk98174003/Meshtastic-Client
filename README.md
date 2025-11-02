@@ -20,10 +20,10 @@ Standalone Windows GUI for their Meshtastic devices.
 
 <img width="1511" height="877" alt="billede" src="https://github.com/user-attachments/assets/136bb80b-f390-4d13-acff-90b5f83d02c0" />
 
->>> You can also download the ready to use Mestastic_Client.exe <<<
-
-
+---
 ### 🧰 Installation & Setup (Windows)
+You can also download the ready to use Mestastic_Client.exe 
+---
 
 1. **Install Python 3.10 or newer**
 
