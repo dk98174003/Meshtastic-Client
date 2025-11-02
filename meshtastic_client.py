@@ -223,8 +223,9 @@ class MeshtasticGUI:
 
         # right-click:
         self.node_menu = tk.Menu(self.nodes_frame, tearoff=False)
-        # removed raw to keep GUI clean
         self.node_menu.add_command(label="Node info", command=self._cm_show_node_details)
+        # NEW: open Google Maps with node location
+        self.node_menu.add_command(label="Map", command=self._cm_open_map)
 
         self.tv_nodes.bind("<Button-3>", self._popup_node_menu)
         self.tv_nodes.bind("<Double-1>", lambda e: self._toggle_send_target())
@@ -738,6 +739,21 @@ class MeshtasticGUI:
 
     def _cm_show_node_details(self):
         self.show_raw_node(friendly=True)
+
+    # NEW: open Google Maps on right-click
+    def _cm_open_map(self):
+        nid = self._get_selected_node_id()
+        if not nid or not self.iface or not getattr(self.iface, "nodes", None):
+            messagebox.showinfo("Map", "No node selected.")
+            return
+        node = self.iface.nodes.get(nid, {})  # type: ignore[attr-defined]
+        lat, lon = self._extract_latlon(node)
+        if lat is None or lon is None:
+            messagebox.showinfo("Map", "Selected node has no GPS position.")
+            return
+        # official format: https://www.google.com/maps/search/?api=1&query=lat,lon
+        url = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+        self._open_browser_url(url)
 
     def show_raw_node(self, friendly: bool = False):
         nid = self._get_selected_node_id()
