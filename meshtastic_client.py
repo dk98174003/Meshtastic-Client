@@ -4,6 +4,9 @@ from __future__ import annotations
 import json, time, datetime, threading, pathlib, tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from typing import Any, Dict, Optional
+import os
+import subprocess
+import webbrowser
 
 try:
     from pubsub import pub
@@ -33,6 +36,18 @@ PORT_DEFAULT = 4403
 PROJECT_PATH = pathlib.Path(__file__).parent
 ICON_PATH = PROJECT_PATH / "meshtastic.ico"
 
+def _prefer_chrome(url: str):
+    # try Chrome first
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    for p in chrome_paths:
+        if os.path.exists(p):
+            subprocess.Popen([p, url])
+            return
+    # fallback
+    webbrowser.open(url)
 
 def _fmt_ago(epoch_seconds: Optional[float]) -> str:
     if not epoch_seconds:
@@ -95,6 +110,18 @@ class MeshtasticGUI:
         m_view.add_command(label="Light theme", command=lambda: self.apply_theme("light"))
         m_view.add_command(label="Dark theme", command=lambda: self.apply_theme("dark"))
         menubar.add_cascade(label="View", menu=m_view)
+        
+        m_links = tk.Menu(menubar, tearoff=False)
+        m_links.add_command(label="Meshtastic client", command=lambda: self._open_browser_url("https://github.com/dk98174003/Meshtastic-Client"))
+        m_links.add_command(label="Meshtastic org", command=lambda: self._open_browser_url("https://meshtastic.org/"))
+        m_links.add_command(label="Meshtastic flasher (Chrome)", command=lambda: self._open_browser_url("https://flasher.meshtastic.org/"))
+        m_links.add_command(label="Meshtastic Web Client", command=lambda: self._open_browser_url("https://client.meshtastic.org"))
+        m_links.add_command(label="Meshtastic docker client", command=lambda: self._open_browser_url("https://meshtastic.org/docs/software/linux/usage/#usage-with-docker"))
+        m_links.add_separator()
+        m_links.add_command(label="Meshtastic Facebook Danmark", command=lambda: self._open_browser_url("https://www.facebook.com/groups/1553839535376876/"))
+        m_links.add_command(label="Meshtastic Facebook Nordjylland", command=lambda: self._open_browser_url("https://www.facebook.com/groups/1265866668302201/"))
+        menubar.add_cascade(label="Links", menu=m_links)
+        
         self.root.config(menu=menubar)
 
         self.rootframe = ttk.Frame(self.root)
@@ -226,6 +253,9 @@ class MeshtasticGUI:
         self._update_title_with_host()
 
     # helpers ---------------------------------------------------------
+    def _open_browser_url(self, url: str):
+        _prefer_chrome(url)
+
     def _update_title_with_host(self):
         self.root.title("Meshtastic Client - %s:%s" % (self.host_var.get(), self.port_var.get()))
 
@@ -294,29 +324,6 @@ class MeshtasticGUI:
                 self._append(f"[MSG] {label}: {text}")
             else:
                 self._append(f"[MSG] {label}")
-        elif app_name == "POSITION_APP":
-            pos = decoded.get("payload", {}) or decoded
-            lat = pos.get("latitude")
-            lon = pos.get("longitude")
-            alt = pos.get("altitude")
-            spd = pos.get("ground_speed")
-            rssi = packet.get("rxRssi") or packet.get("rssi") or "-"
-            self._append(f"[POS] {label}  gps={lat} ,{lon}  alt={alt} m  gs={spd}  rssi={rssi}")
-        elif app_name == "TELEMETRY_APP":
-            tel = decoded.get("payload", {}) or decoded
-            batt = tel.get("battery_level") or tel.get("voltage")
-            line = f"[TEL] {label}"
-            if batt is not None and str(batt).strip() not in ("", "-", "None", "null"):
-                line += f"  batt={batt}"
-            self._append(line)
-        elif app_name == "NODEINFO_APP":
-            ni = decoded.get("payload", {}) or decoded
-            sn = ni.get("shortName") or ni.get("short_name") or ""
-            ln = ni.get("longName") or ni.get("long_name") or ""
-            hw = ni.get("hwModel") or ni.get("hardware") or ""
-            self._append(f"[INFO] {label} {sn} {ln} {hw}")
-        else:
-            self._append(f"[{tag}] Packet from {label} on {app_name or portnum}")
 
         if hasattr(self, "refresh_nodes"):
             self.refresh_nodes()
@@ -356,54 +363,6 @@ class MeshtasticGUI:
             self._append("[MSG] %s: %s (RSSI=%s)" % (label, text, rssi))
             if isinstance(text, str) and text.strip().lower() == "ping":
                 self._send_pong(sender, label)
-
-        elif portnum == "POSITION_APP":
-            pos = decoded.get("position", {})
-            lat = pos.get("latitude_i") or pos.get("latitudeI") or pos.get("latitude")
-            lon = pos.get("longitude_i") or pos.get("longitudeI") or pos.get("longitude")
-            lat_str = "-"
-            lon_str = "-"
-            try:
-                if lat is not None:
-                    lat_f = float(lat)
-                    if abs(lat_f) > 90:
-                        lat_f = lat_f * 1e-7
-                    lat_str = "%.6f" % lat_f
-            except Exception:
-                pass
-            try:
-                if lon is not None:
-                    lon_f = float(lon)
-                    if abs(lon_f) > 180:
-                        lon_f = lon_f * 1e-7
-                    lon_str = "%.6f" % lon_f
-            except Exception:
-                pass
-            alt = pos.get("altitude") or pos.get("altitudeM") or pos.get("altitude_i")
-            gs = pos.get("groundSpeed") or pos.get("ground_speed")
-            if gs is not None:
-                try:
-                    gs_val = float(gs)
-                    if gs_val < 60:
-                        gs_str = "%.1f km/h" % (gs_val * 3.6)
-                    else:
-                        gs_str = "%.1f" % gs_val
-                except Exception:
-                    gs_str = str(gs)
-            else:
-                gs_str = "-"
-            alt_str = "%s m" % alt if alt is not None else "-"
-            self._append("[POS] %s %s  gps=%s ,%s  alt=%s  gs=%s  rssi=%s" % (shortname, longname, lat_str, lon_str, alt_str, gs_str, rssi))
-
-        elif portnum == "TELEMETRY_APP":
-            tel = decoded.get("telemetry", {})
-            dm = tel.get("deviceMetrics", {}) if isinstance(tel, dict) else {}
-            batt = dm.get("batteryLevel") or dm.get("battery_level") or dm.get("batteryPct")
-            batt_str = "%s%%" % batt if batt is not None else "-"
-            self._append("[TEL] %s %s  batt=%s" % (shortname, longname, batt_str))
-
-        else:
-            self._append("[INFO] Packet from %s on %s" % (label, portnum))
 
         self.refresh_nodes()
 
