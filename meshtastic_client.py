@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-"""
-Meshtastic Client (ASCII only) with theming for ALL windows
-- main window dark/light
-- "My Info" window themed
-- "Details (friendly)" window themed
-"""
 from __future__ import annotations
 import json, time, datetime, threading, pathlib, tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
@@ -94,9 +88,6 @@ class MeshtasticGUI:
         menubar.add_cascade(label="Connection", menu=m_conn)
 
         m_tools = tk.Menu(menubar, tearoff=False)
-        m_tools.add_command(label="My Info", command=self.show_myinfo)
-
-        m_tools.add_separator()
         m_tools.add_command(label="Clear messages", command=lambda: self.txt_messages.delete("1.0", "end"))
         menubar.add_cascade(label="Tools", menu=m_tools)
 
@@ -203,11 +194,10 @@ class MeshtasticGUI:
         self.tv_nodes.configure(yscrollcommand=yscroll_nodes.set)
         yscroll_nodes.grid(row=1, column=1, sticky="ns")
 
+        # right-click:
         self.node_menu = tk.Menu(self.nodes_frame, tearoff=False)
-        self.node_menu.add_command(label="Send to this node", command=self._cm_send_to_node)
-        self.node_menu.add_command(label="Show raw node (one)", command=self.show_raw_node)
-        self.node_menu.add_separator()
-        self.node_menu.add_command(label="Details (friendly)", command=self._cm_show_node_details)
+        # removed raw to keep GUI clean
+        self.node_menu.add_command(label="Node info", command=self._cm_show_node_details)
 
         self.tv_nodes.bind("<Button-3>", self._popup_node_menu)
         self.tv_nodes.bind("<Double-1>", lambda e: self._toggle_send_target())
@@ -276,16 +266,12 @@ class MeshtasticGUI:
 
     # receive ---------------------------------------------------------
     def _handle_receive(self, packet: dict):
-        """Extended handler: recognize more Meshtastic packet types."""
         decoded = packet.get("decoded", {}) if isinstance(packet, dict) else {}
         app_name = decoded.get("app", "")
-        portnum = decoded.get("portnum") or app_name  # some firmwares only set one
+        portnum = decoded.get("portnum") or app_name
         from_id = packet.get("fromId") or packet.get("from") or "UNKNOWN"
-
-        # Try to look up friendly label for the node
         label = self._node_label(from_id) if hasattr(self, "_node_label") else from_id
 
-        # Map: Meshtastic app/port → tag
         tag_map = {
             "TEXT_MESSAGE_APP": "MSG",
             "TEXT_MESSAGE_COMPRESSED_APP": "MSG",
@@ -302,9 +288,7 @@ class MeshtasticGUI:
         }
         tag = tag_map.get(app_name or portnum, "INFO")
 
-        # dispatch
         if app_name in ("TEXT_MESSAGE_APP", "TEXT_MESSAGE_COMPRESSED_APP"):
-            # existing text renderer
             text = decoded.get("text") or decoded.get("payload", {}).get("text", "")
             if text:
                 self._append(f"[MSG] {label}: {text}")
@@ -317,7 +301,6 @@ class MeshtasticGUI:
             alt = pos.get("altitude")
             spd = pos.get("ground_speed")
             rssi = packet.get("rxRssi") or packet.get("rssi") or "-"
-            # format exactly as requested
             self._append(f"[POS] {label}  gps={lat} ,{lon}  alt={alt} m  gs={spd}  rssi={rssi}")
         elif app_name == "TELEMETRY_APP":
             tel = decoded.get("payload", {}) or decoded
@@ -333,16 +316,13 @@ class MeshtasticGUI:
             hw = ni.get("hwModel") or ni.get("hardware") or ""
             self._append(f"[INFO] {label} {sn} {ln} {hw}")
         else:
-            # fallback: show raw app/port name
             self._append(f"[{tag}] Packet from {label} on {app_name or portnum}")
 
-        # refresh nodes if list needs to update
         if hasattr(self, "refresh_nodes"):
             self.refresh_nodes()
 
         decoded = packet.get("decoded", {}) if isinstance(packet, dict) else {}
         portnum = decoded.get("portnum")
-
         sender = packet.get("fromId") or packet.get("from") or packet.get("fromIdShort")
         if sender:
             self._last_seen_overrides[str(sender)] = time.time()
@@ -352,7 +332,7 @@ class MeshtasticGUI:
             user = (self.iface.nodes.get(sender) or {}).get("user", {})  # type: ignore[attr-defined]
         shortname = user.get("shortName") or ""
         longname = user.get("longName") or ""
-        label = (shortname or longname or sender or "Unknown").strip()
+        label = str(shortname or longname or sender or "Unknown").strip()
 
         text = ""
         p = decoded.get("payload", "")
@@ -379,7 +359,6 @@ class MeshtasticGUI:
 
         elif portnum == "POSITION_APP":
             pos = decoded.get("position", {})
-            # lat/lon can come as latitude_i / longitude_i (int *1e7) or latitude / longitude (float)
             lat = pos.get("latitude_i") or pos.get("latitudeI") or pos.get("latitude")
             lon = pos.get("longitude_i") or pos.get("longitudeI") or pos.get("longitude")
             lat_str = "-"
@@ -387,7 +366,7 @@ class MeshtasticGUI:
             try:
                 if lat is not None:
                     lat_f = float(lat)
-                    if abs(lat_f) > 90:  # int format
+                    if abs(lat_f) > 90:
                         lat_f = lat_f * 1e-7
                     lat_str = "%.6f" % lat_f
             except Exception:
@@ -395,7 +374,7 @@ class MeshtasticGUI:
             try:
                 if lon is not None:
                     lon_f = float(lon)
-                    if abs(lon_f) > 180:  # int format
+                    if abs(lon_f) > 180:
                         lon_f = lon_f * 1e-7
                     lon_str = "%.6f" % lon_f
             except Exception:
@@ -419,10 +398,8 @@ class MeshtasticGUI:
         elif portnum == "TELEMETRY_APP":
             tel = decoded.get("telemetry", {})
             dm = tel.get("deviceMetrics", {}) if isinstance(tel, dict) else {}
-            em = tel.get("environmentMetrics", {}) if isinstance(tel, dict) else {}
             batt = dm.get("batteryLevel") or dm.get("battery_level") or dm.get("batteryPct")
             batt_str = "%s%%" % batt if batt is not None else "-"
-            # only show batt – temp/air often come as '-'
             self._append("[TEL] %s %s  batt=%s" % (shortname, longname, batt_str))
 
         else:
@@ -764,12 +741,10 @@ class MeshtasticGUI:
             pass
 
     def _style_toplevel(self, win: tk.Toplevel):
-        # apply current theme colors to new windows
         is_dark = (self.current_theme == "dark")
         bg = "#1e1e1e" if is_dark else "#f5f5f5"
         fg = "#ffffff" if is_dark else "#000000"
         win.configure(bg=bg)
-        # text widgets etc. can be styled by caller
 
     # UTILS / CONTEXT ------------------------------------------------
     def _append(self, text: str):
@@ -822,59 +797,67 @@ class MeshtasticGUI:
         txt.configure(bg=("#2d2d2d" if is_dark else "#ffffff"),
                       fg=("#ffffff" if is_dark else "#000000"),
                       insertbackground=("#ffffff" if is_dark else "#000000"))
+
         if friendly:
+            def fmt_val(v, indent=0):
+                pad = "  " * indent
+                if isinstance(v, dict):
+                    lines = []
+                    for k, vv in v.items():
+                        if isinstance(vv, (dict, list)):
+                            lines.append(f"{pad}{k}:")
+                            lines.append(fmt_val(vv, indent + 1))
+                        else:
+                            lines.append(f"{pad}{k}: {vv}")
+                    return "\n".join(lines)
+                elif isinstance(v, list):
+                    lines = []
+                    for i, item in enumerate(v):
+                        if isinstance(item, (dict, list)):
+                            lines.append(f"{pad}- [{i}]")
+                            lines.append(fmt_val(item, indent + 1))
+                        else:
+                            lines.append(f"{pad}- {item}")
+                    return "\n".join(lines)
+                else:
+                    return f"{pad}{v}"
+
             user = (node or {}).get("user") or {}
             pos = (node or {}).get("position") or {}
+            caps = (node or {}).get("capabilities") or {}
+            config = (node or {}).get("config") or {}
+
+            node_id = user.get("id") or node.get("id") or nid
+            macaddr = user.get("macaddr") or node.get("macaddr") or ""
+            publickey = user.get("publicKey") or node.get("publicKey") or ""
+            hw = user.get("hwModel", "")
+
             lines = [
-                "Name: %s %s" % (user.get("shortName", ""), user.get("longName", "")),
-                "Role: %s" % user.get("role", ""),
-                "HW:   %s" % user.get("hwModel", ""),
-                "MAC:  %s" % user.get("macaddr", ""),
+                f"Name: {user.get('shortName', '')} {user.get('longName', '')}".strip(),
+                f"ID:   {node_id}",
+                f"MAC:  {macaddr}",
+                f"HW:   {hw}",
+                f"Public key: {publickey}",
                 "",
-                "Last heard: %s" % _fmt_ago(self._get_lastheard_epoch(nid, node)),
+                f"Last heard: {_fmt_ago(self._get_lastheard_epoch(nid, node))}",
                 "",
                 "Position:",
-                json.dumps(pos, indent=2, default=str),
+                fmt_val(pos, 1),
             ]
+            if caps:
+                lines.append("Capabilities:")
+                lines.append(fmt_val(caps, 1))
+            if config:
+                lines.append("Config:")
+                lines.append(fmt_val(config, 1))
+            lines.append("RAW fields:")
+            skip = {"user", "position", "capabilities", "config"}
+            other = {k: v for k, v in (node or {}).items() if k not in skip}
+            lines.append(fmt_val(other, 1))
             txt.insert("1.0", "\n".join(lines))
         else:
             txt.insert("1.0", json.dumps(node, indent=2, default=str))
         txt.configure(state="disabled")
-
-    def show_myinfo(self):
-        if not self.iface:
-            messagebox.showinfo("Info", "Not connected.")
-            return
-        def _call(name):
-            try:
-                f = getattr(self.iface, name, None)
-                return f() if callable(f) else {}
-            except Exception:
-                return {}
-        payload = {
-            "user": _call("getMyUser"),
-            "nodeinfo": _call("getMyNodeInfo"),
-            "myInfo": getattr(self.iface, "myInfo", {}) or {},
-        }
-        win = tk.Toplevel(self.root)
-        win.title("My Info")
-        self._style_toplevel(win)
-        frm = ttk.Frame(win, padding=8)
-        frm.pack(expand=True, fill="both")
-        txt = tk.Text(frm, wrap="word")
-        y = ttk.Scrollbar(frm, orient="vertical", command=txt.yview)
-        txt.configure(yscrollcommand=y.set)
-        txt.grid(row=0, column=0, sticky="nsew")
-        y.grid(row=0, column=1, sticky="ns")
-        frm.rowconfigure(0, weight=1)
-        frm.columnconfigure(0, weight=1)
-        is_dark = (self.current_theme == "dark")
-        txt.configure(bg=("#2d2d2d" if is_dark else "#ffffff"),
-                      fg=("#ffffff" if is_dark else "#000000"),
-                      insertbackground=("#ffffff" if is_dark else "#000000"))
-        txt.insert("1.0", json.dumps(payload, indent=2, default=str))
-        txt.configure(state="disabled")
-
 
 def main():
     app = MeshtasticGUI()
