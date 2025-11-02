@@ -9,15 +9,18 @@ Built entirely in **Python**, it features:
 * Message send/receive for the channels public and direct
 * Support for light and dark themes
 * Direct IP, USB and Bluetooth connection support
-* Auto-refresh and status bar with node count
+* Auto-refresh and title with node count default sort since
 * Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
 * Displays telemetry and position status messages directly in the message feed
 * Node count, node filter, and sorting by short name, long name, since, hops, distance, hardware, and role.
-* Right click menu on the nodes SendTo, Ping, Show node details.
+* Right click menu on the node to Show node info.
+* Send "To selected" to send direct messages.
 
 Standalone Windows GUI for their Meshtastic devices.
 
-<img width="1509" height="876" alt="billede" src="https://github.com/user-attachments/assets/87a91097-e709-4be9-b605-9b58bceecfcf" />
+<img width="1511" height="877" alt="billede" src="https://github.com/user-attachments/assets/136bb80b-f390-4d13-acff-90b5f83d02c0" />
+
+>>> You can also download the ready to use Mestastic_Client.exe <<<
 
 
 ### 🧰 Installation & Setup (Windows)
@@ -90,8 +93,6 @@ Standalone Windows GUI for their Meshtastic devices.
 
 8. **Enable Bluetooth in Windows Settings → Bluetooth & devices → “Add device” to ensure permissions.
 
-
-The exe file is also available ready to use (you not need to install Python first).
 
 Have fun
 
