@@ -127,16 +127,12 @@ sudo usermod -aG tty $USER
 # log out and back in
 ```
 
----
-
 ### ▶️ Run
 
 ```bash
 source venv/bin/activate
 python3 meshtastic_client.py
 ```
-
----
 
 ### 🧩 Notes
 
