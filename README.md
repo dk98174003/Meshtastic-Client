@@ -105,6 +105,7 @@ Here’s a short **GitHub installation & run description** for your `meshtastic_
 A Python GUI client for Meshtastic devices running fully offline on Raspberry Pi OS Trixie (Debian 13).
 Connect via USB or Bluetooth, send and receive messages, and view node info in real time.
 
+<img width="1680" height="959" alt="billede" src="https://github.com/user-attachments/assets/508bc34a-9f3a-4a5c-8395-eaaddf01c4a3" />
 
 ### ⚙️ Installation
 
