@@ -1,6 +1,6 @@
-### 🛰️ Meshtastic Client for Windows
+### 🛰️ Meshtastic Client for Windows and Linux
 
-**A modern Python-based desktop client for managing Meshtastic networks on Windows.**
+**A modern Python-based desktop client for managing Meshtastic networks on Windows and Linux.**
 This project provides an intuitive graphical interface to connect via IP, USB or Bluetooth to Meshtastic devices, monitor nodes in real time, send and receive messages, and manage network settings — all without using the command line.
 
 Built entirely in **Python**, it features:
