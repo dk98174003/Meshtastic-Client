@@ -5,20 +5,20 @@ This project provides an intuitive graphical interface to connect via IP, USB or
 
 Built entirely in **Python**, it features:
 
-* Real-time node list with distance, hops, and last-heard info
+* Real-time node list with shortname, longname, since, hops, dist, speed, alt, hw, role
 * Message send/receive for the channels public and direct
 * Support for light and dark themes
 * Direct IP, USB and Bluetooth connection support
 * Auto-refresh and title with node count default sort since
 * Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
-* Displays telemetry and position status messages directly in the message feed
 * Node count, node filter, and sorting by short name, long name, since, hops, distance, hardware, and role.
 * Right click menu on the node to Show node info, Show node on Map and Traceroute the node.
 * Send "To selected" to send direct messages.
+* Links menu to Meshtastic internet sites.
 
 Standalone Windows GUI for their Meshtastic devices.
 
-<img width="1511" height="877" alt="billede" src="https://github.com/user-attachments/assets/136bb80b-f390-4d13-acff-90b5f83d02c0" />
+<img width="1508" height="876" alt="billede" src="https://github.com/user-attachments/assets/f973fcdd-eb3e-4dc0-bb48-4815468e1c2f" />
 
 ---
 ### 🧰 Installation & Setup (Windows)
@@ -105,7 +105,7 @@ Here’s a short **GitHub installation & run description** for your `meshtastic_
 A Python GUI client for Meshtastic devices running fully offline on Raspberry Pi OS Trixie (Debian 13).
 Connect via USB or Bluetooth, send and receive messages, and view node info in real time.
 
-<img width="1680" height="959" alt="billede" src="https://github.com/user-attachments/assets/508bc34a-9f3a-4a5c-8395-eaaddf01c4a3" />
+<img width="1510" height="878" alt="billede" src="https://github.com/user-attachments/assets/742ecadc-b329-4aa2-b851-1b861c841f05" />
 
 ### ⚙️ Installation
 
