@@ -13,7 +13,7 @@ Built entirely in **Python**, it features:
 * Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
 * Displays telemetry and position status messages directly in the message feed
 * Node count, node filter, and sorting by short name, long name, since, hops, distance, hardware, and role.
-* Right click menu on the node to Show node info and Map.
+* Right click menu on the node to Show node info, Show node on Map and Traceroute the node.
 * Send "To selected" to send direct messages.
 
 Standalone Windows GUI for their Meshtastic devices.
