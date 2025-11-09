@@ -36,6 +36,7 @@ PORT_DEFAULT = 4403
 PROJECT_PATH = pathlib.Path(__file__).parent
 ICON_PATH = PROJECT_PATH / "meshtastic.ico"
 
+
 def _prefer_chrome(url: str):
     # try Chrome first
     chrome_paths = [
@@ -48,6 +49,7 @@ def _prefer_chrome(url: str):
             return
     # fallback
     webbrowser.open(url)
+
 
 def _fmt_ago(epoch_seconds: Optional[float]) -> str:
     if not epoch_seconds:
@@ -110,7 +112,7 @@ class MeshtasticGUI:
         m_view.add_command(label="Light theme", command=lambda: self.apply_theme("light"))
         m_view.add_command(label="Dark theme", command=lambda: self.apply_theme("dark"))
         menubar.add_cascade(label="View", menu=m_view)
-        
+
         m_links = tk.Menu(menubar, tearoff=False)
         m_links.add_command(label="Meshtastic client", command=lambda: self._open_browser_url("https://github.com/dk98174003/Meshtastic-Client"))
         m_links.add_command(label="Meshtastic org", command=lambda: self._open_browser_url("https://meshtastic.org/"))
@@ -121,7 +123,7 @@ class MeshtasticGUI:
         m_links.add_command(label="Meshtastic Facebook Danmark", command=lambda: self._open_browser_url("https://www.facebook.com/groups/1553839535376876/"))
         m_links.add_command(label="Meshtastic Facebook Nordjylland", command=lambda: self._open_browser_url("https://www.facebook.com/groups/1265866668302201/"))
         menubar.add_cascade(label="Links", menu=m_links)
-        
+
         self.root.config(menu=menubar)
 
         self.rootframe = ttk.Frame(self.root)
@@ -167,10 +169,15 @@ class MeshtasticGUI:
         self.ent_search.bind("<KeyRelease>", lambda e: self.refresh_nodes())
 
         self.cols_all = (
-            "shortname", "longname", "since", "hops", "distkm",
-            "lastheard", "hwmodel", "role", "macaddr", "publickey", "isunmessagable", "id"
+            "shortname", "longname", "since", "hops",
+            "distkm", "speed", "alt",
+            "lastheard", "hwmodel", "role",
+            "macaddr", "publickey", "isunmessagable", "id"
         )
-        self.cols_visible = ("shortname", "longname", "since", "hops", "distkm", "hwmodel", "role")
+        self.cols_visible = (
+            "shortname", "longname", "since", "hops",
+            "distkm", "speed", "alt", "hwmodel", "role"
+        )
         self.tv_nodes = ttk.Treeview(
             self.nodes_frame,
             columns=self.cols_all,
@@ -185,6 +192,8 @@ class MeshtasticGUI:
             "since": "Since",
             "hops": "Hops",
             "distkm": "Dist (km)",
+            "speed": "Speed",
+            "alt": "Alt (m)",
             "hwmodel": "HW",
             "role": "Role",
             "lastheard": "",
@@ -202,15 +211,18 @@ class MeshtasticGUI:
             "since": 90,
             "hops": 50,
             "distkm": 70,
+            "speed": 70,
+            "alt": 70,
             "hwmodel": 90,
             "role": 110,
         }
         for key, w in widths.items():
             try:
-                self.tv_nodes.column(key, width=w, anchor="w", stretch=(key not in ("since", "hops", "distkm")))
+                self.tv_nodes.column(key, width=w, anchor="w", stretch=(key not in ("since", "hops", "distkm", "speed", "alt")))
             except Exception:
                 pass
 
+        # hide technical columns
         for col in ("lastheard", "macaddr", "publickey", "isunmessagable", "id"):
             try:
                 self.tv_nodes.column(col, width=0, minwidth=0, stretch=False)
@@ -224,7 +236,6 @@ class MeshtasticGUI:
         # right-click:
         self.node_menu = tk.Menu(self.nodes_frame, tearoff=False)
         self.node_menu.add_command(label="Node info", command=self._cm_show_node_details)
-        # NEW: open Google Maps with node location
         self.node_menu.add_command(label="Map", command=self._cm_open_map)
 
         self.tv_nodes.bind("<Button-3>", self._popup_node_menu)
@@ -232,7 +243,7 @@ class MeshtasticGUI:
 
         self.paned.add(self.msg_frame, weight=3)
         self.paned.add(self.nodes_frame, weight=4)
-        self.root.after(100, lambda: self._safe_set_sash(0.48))
+        self.root.after(100, lambda: self._safe_set_sash(0.40))
 
         self.iface: Optional[object] = None
         self.connected_evt = threading.Event()
@@ -481,9 +492,13 @@ class MeshtasticGUI:
         if not devices:
             messagebox.showinfo("BLE", "No devices found.")
             return
-        options = ["%d. %s [%s]" % (i+1, getattr(d, "name", "") or "(unnamed)", getattr(d, "address", "?")) for i, d in enumerate(devices)]
-        choice = simpledialog.askinteger("Select BLE device", "Enter number:\n" + "\n".join(options),
-                                         minvalue=1, maxvalue=len(devices))
+        options = ["%d. %s [%s]" % (i + 1, getattr(d, "name", "") or "(unnamed)", getattr(d, "address", "?")) for i, d in enumerate(devices)]
+        choice = simpledialog.askinteger(
+            "Select BLE device",
+            "Enter number:\n" + "\n".join(options),
+            minvalue=1,
+            maxvalue=len(devices),
+        )
         if not choice:
             return
         addr = getattr(devices[choice - 1], "address", None)
@@ -554,12 +569,36 @@ class MeshtasticGUI:
         lon = pos.get("longitude") or pos.get("longitudeI") or pos.get("longitude_i")
         try:
             if lat is not None:
-                lat = float(lat) * (1e-7 if abs(lat) > 90 else 1.0)
+                lat = float(lat) * (1e-7 if abs(float(lat)) > 90 else 1.0)
             if lon is not None:
-                lon = float(lon) * (1e-7 if abs(lon) > 180 else 1.0)
+                lon = float(lon) * (1e-7 if abs(float(lon)) > 180 else 1.0)
         except Exception:
             lat = lon = None
         return lat, lon
+
+    def _extract_speed_alt(self, node: dict) -> tuple[float | None, float | None]:
+        """Return (speed_kmh, alt_m) if present in node.position, else (None, None)."""
+        pos = (node or {}).get("position") or {}
+        speed = (
+            pos.get("groundSpeedKmh")
+            or pos.get("groundSpeedKmhI")
+            or pos.get("groundSpeed")
+            or pos.get("ground_speed")
+        )
+        alt = (
+            pos.get("altitude")
+            or pos.get("altitudeM")
+            or pos.get("altitude_i")
+            or pos.get("altitudeI")
+        )
+        try:
+            if speed is not None:
+                speed = float(speed)
+            if alt is not None:
+                alt = float(alt)
+        except Exception:
+            speed, alt = None, None
+        return speed, alt
 
     def _get_local_latlon(self) -> tuple[float | None, float | None]:
         if not self.iface:
@@ -579,9 +618,11 @@ class MeshtasticGUI:
     def _haversine_km(self, lat1, lon1, lat2, lon2) -> float:
         import math
         R = 6371.0088
-        phi1 = math.radians(lat1); phi2 = math.radians(lat2)
-        dphi = math.radians(lat2 - lat1); dlmb = math.radians(lon2 - lon1)
-        a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlmb/2)**2
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        dphi = math.radians(lat2 - lat1)
+        dlmb = math.radians(lon2 - lon1)
+        a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlmb / 2) ** 2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         return R * c
 
@@ -612,6 +653,7 @@ class MeshtasticGUI:
             lastheard_epoch = self._get_lastheard_epoch(node_id, node)
             since_str = _fmt_ago(lastheard_epoch)
             hops = node.get("hopsAway")
+
             lat, lon = self._extract_latlon(node)
             if base_lat is not None and base_lon is not None and lat is not None and lon is not None:
                 try:
@@ -622,10 +664,18 @@ class MeshtasticGUI:
                 dist = None
             dist_str = "%.1f" % dist if isinstance(dist, (int, float)) else "-"
 
+            speed, alt = self._extract_speed_alt(node)
+            speed_str = "%.1f" % speed if isinstance(speed, (int, float)) else "-"
+            alt_str = "%.0f" % alt if isinstance(alt, (int, float)) else "-"
+
             values = (
-                shortname, longname, since_str,
+                shortname,
+                longname,
+                since_str,
                 str(hops) if hops is not None else "-",
                 dist_str,
+                speed_str,
+                alt_str,
                 "%.0f" % (lastheard_epoch or 0),
                 hwmodel,
                 role,
@@ -650,7 +700,7 @@ class MeshtasticGUI:
         self._last_sort_col = col
         self._last_sort_reverse = reverse
         col_to_sort = "lastheard" if col == "since" else col
-        numeric = {"lastheard", "distkm", "hops"}
+        numeric = {"lastheard", "distkm", "hops", "speed", "alt"}
         rows = []
         for iid in self.tv_nodes.get_children(""):
             val = self.tv_nodes.set(iid, col_to_sort)
@@ -670,7 +720,7 @@ class MeshtasticGUI:
     # THEME -----------------------------------------------------------
     def apply_theme(self, mode: str = "light"):
         self.current_theme = mode
-        is_dark = (mode == "dark")
+        is_dark = mode == "dark"
         bg = "#1e1e1e" if is_dark else "#f5f5f5"
         fg = "#ffffff" if is_dark else "#000000"
         acc = "#2d2d2d" if is_dark else "#ffffff"
@@ -701,9 +751,8 @@ class MeshtasticGUI:
             pass
 
     def _style_toplevel(self, win: tk.Toplevel):
-        is_dark = (self.current_theme == "dark")
+        is_dark = self.current_theme == "dark"
         bg = "#1e1e1e" if is_dark else "#f5f5f5"
-        fg = "#ffffff" if is_dark else "#000000"
         win.configure(bg=bg)
 
     # UTILS / CONTEXT ------------------------------------------------
@@ -730,17 +779,9 @@ class MeshtasticGUI:
         self.node_menu.tk_popup(event.x_root, event.y_root)
         self.node_menu.grab_release()
 
-    def _cm_send_to_node(self):
-        nid = self._get_selected_node_id()
-        if not nid:
-            return
-        self.send_to_selected.set(True)
-        self._append("[target] will send to %s" % self._node_label(nid))
-
     def _cm_show_node_details(self):
         self.show_raw_node(friendly=True)
 
-    # NEW: open Google Maps on right-click
     def _cm_open_map(self):
         nid = self._get_selected_node_id()
         if not nid or not self.iface or not getattr(self.iface, "nodes", None):
@@ -751,7 +792,6 @@ class MeshtasticGUI:
         if lat is None or lon is None:
             messagebox.showinfo("Map", "Selected node has no GPS position.")
             return
-        # official format: https://www.google.com/maps/search/?api=1&query=lat,lon
         url = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
         self._open_browser_url(url)
 
@@ -768,10 +808,12 @@ class MeshtasticGUI:
         frm.pack(expand=True, fill="both")
         txt = tk.Text(frm, wrap="word")
         txt.pack(expand=True, fill="both")
-        is_dark = (self.current_theme == "dark")
-        txt.configure(bg=("#2d2d2d" if is_dark else "#ffffff"),
-                      fg=("#ffffff" if is_dark else "#000000"),
-                      insertbackground=("#ffffff" if is_dark else "#000000"))
+        is_dark = self.current_theme == "dark"
+        txt.configure(
+            bg=("#2d2d2d" if is_dark else "#ffffff"),
+            fg=("#ffffff" if is_dark else "#000000"),
+            insertbackground=("#ffffff" if is_dark else "#000000"),
+        )
 
         if friendly:
             def fmt_val(v, indent=0):
@@ -833,6 +875,7 @@ class MeshtasticGUI:
         else:
             txt.insert("1.0", json.dumps(node, indent=2, default=str))
         txt.configure(state="disabled")
+
 
 def main():
     app = MeshtasticGUI()
