@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Meshtastic Client
+Comment=Meshtastic Desktop Client
+Exec=meshtastic-client
+Terminal=false
+Type=Application
+Icon=meshtastic
+Categories=Network;Utility;
+NoDisplay=false
+Name[en_US]=meshtastic-client_linuxmint.desktop
+
