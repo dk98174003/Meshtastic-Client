@@ -102,26 +102,26 @@ class MeshtasticGUI:
         self.host_var = tk.StringVar(value=HOST_DEFAULT)
         self.port_var = tk.IntVar(value=PORT_DEFAULT)
 
-        menubar = tk.Menu(self.root)
-        m_conn = tk.Menu(menubar, tearoff=False)
+        self.menubar = tk.Menu(self.root)
+        m_conn = tk.Menu(self.menubar, tearoff=False)
         m_conn.add_command(label="Connect (TCP)", command=self.connect_tcp)
         m_conn.add_command(label="Connect via USB/Serial...", command=self.connect_serial_dialog)
         m_conn.add_command(label="Connect via Bluetooth...", command=self.connect_ble_dialog)
         m_conn.add_command(label="Disconnect", command=self.disconnect)
         m_conn.add_separator()
         m_conn.add_command(label="Set IP/Port...", command=self.set_ip_port)
-        menubar.add_cascade(label="Connection", menu=m_conn)
+        self.menubar.add_cascade(label="Connection", menu=m_conn)
 
-        m_tools = tk.Menu(menubar, tearoff=False)
+        m_tools = tk.Menu(self.menubar, tearoff=False)
         m_tools.add_command(label="Clear messages", command=lambda: self.txt_messages.delete("1.0", "end"))
-        menubar.add_cascade(label="Tools", menu=m_tools)
+        self.menubar.add_cascade(label="Tools", menu=m_tools)
 
-        m_view = tk.Menu(menubar, tearoff=False)
+        m_view = tk.Menu(self.menubar, tearoff=False)
         m_view.add_command(label="Light theme", command=lambda: self.apply_theme("light"))
         m_view.add_command(label="Dark theme", command=lambda: self.apply_theme("dark"))
-        menubar.add_cascade(label="View", menu=m_view)
+        self.menubar.add_cascade(label="View", menu=m_view)
 
-        m_links = tk.Menu(menubar, tearoff=False)
+        m_links = tk.Menu(self.menubar, tearoff=False)
         m_links.add_command(label="Meshtastic client", command=lambda: self._open_browser_url("https://github.com/dk98174003/Meshtastic-Client"))
         m_links.add_command(label="Meshtastic org", command=lambda: self._open_browser_url("https://meshtastic.org/"))
         m_links.add_command(label="Meshtastic flasher (Chrome)", command=lambda: self._open_browser_url("https://flasher.meshtastic.org/"))
@@ -130,9 +130,9 @@ class MeshtasticGUI:
         m_links.add_separator()
         m_links.add_command(label="Meshtastic Facebook Danmark", command=lambda: self._open_browser_url("https://www.facebook.com/groups/1553839535376876/"))
         m_links.add_command(label="Meshtastic Facebook Nordjylland", command=lambda: self._open_browser_url("https://www.facebook.com/groups/1265866668302201/"))
-        menubar.add_cascade(label="Links", menu=m_links)
+        self.menubar.add_cascade(label="Links", menu=m_links)
 
-        self.root.config(menu=menubar)
+        self.root.config(menu=self.menubar)
 
         self.rootframe = ttk.Frame(self.root)
         self.rootframe.grid(row=0, column=0, sticky="nsew")
@@ -163,9 +163,13 @@ class MeshtasticGUI:
         self.ent_message.bind("<Return>", lambda e: self.send_message())
         self.btn_send = ttk.Button(self.send_frame, text="Send", command=self.send_message)
         self.btn_send.grid(row=0, column=1, padx=4, sticky="nsew")
-        self.send_to_selected = tk.BooleanVar(value=False)
-        self.chk_to_selected = ttk.Checkbutton(self.send_frame, text="To selected", variable=self.send_to_selected)
-        self.chk_to_selected.grid(row=0, column=2, padx=4, sticky="w")
+
+        # channel selector (public / selected / private channels)
+        self.channel_var = tk.StringVar()
+        self._channel_map = {}
+        self.cbo_channel = ttk.Combobox(self.send_frame, textvariable=self.channel_var, state="readonly", width=22)
+        self._reset_channel_choices()
+        self.cbo_channel.grid(row=0, column=2, padx=4, sticky="w")
 
         # nodes
         self.nodes_frame = ttk.Labelframe(self.paned, text="Nodes (0)")
@@ -246,6 +250,8 @@ class MeshtasticGUI:
         self.node_menu.add_command(label="Node info", command=self._cm_show_node_details)
         self.node_menu.add_command(label="Map", command=self._cm_open_map)
         self.node_menu.add_command(label="Traceroute", command=self._cm_traceroute)
+        self.node_menu.add_separator()
+        self.node_menu.add_command(label="Delete node", command=self._cm_delete_node)
 
         self.tv_nodes.bind("<Button-3>", self._popup_node_menu)
         self.tv_nodes.bind("<Double-1>", lambda e: self._toggle_send_target())
@@ -303,8 +309,12 @@ class MeshtasticGUI:
     def on_connection_established(self, interface=None, **kwargs):
         self.connected_evt.set()
         self._append("[+] Connected")
+        # refresh nodes and channel list when we connect
         self.refresh_nodes()
-
+        try:
+            self._update_channels_from_iface()
+        except Exception:
+            pass
     def on_connection_lost(self, interface=None, **kwargs):
         self.connected_evt.clear()
         self._append("[-] Connection lost")
@@ -535,6 +545,129 @@ class MeshtasticGUI:
         self._append("[*] Disconnected")
 
     # send ------------------------------------------------------------
+    
+    # channel selector helpers ----------------------------------------
+    def _reset_channel_choices(self):
+        """Initialize channel selector with Public + To selected."""
+        self._channel_map = {}
+        options = []
+
+        label_pub = "Public (broadcast)"
+        self._channel_map[label_pub] = {"mode": "broadcast", "channelIndex": 0}
+        options.append(label_pub)
+
+        label_sel = "To selected node"
+        self._channel_map[label_sel] = {"mode": "selected", "channelIndex": 0}
+        options.append(label_sel)
+
+        if hasattr(self, "cbo_channel"):
+            self.cbo_channel["values"] = options
+        if hasattr(self, "channel_var"):
+            self.channel_var.set(label_pub)
+
+    def _set_channel_choice(self, label: str):
+        """Safely set the current channel choice, if it exists."""
+        try:
+            values = list(self.cbo_channel["values"])
+        except Exception:
+            return
+        if label not in values:
+            return
+        self.channel_var.set(label)
+
+
+    def _update_channels_from_iface(self):
+        """
+        Populate channel selector with channels from the connected device.
+
+        We keep:
+          * "Public (broadcast)"    -> broadcast on channel 0
+          * "To selected node"      -> direct message to selected node on channel 0
+        And then append additional channels (1..N) from the radio as:
+          * "Ch <idx>: <name>"      -> broadcast on that channel.
+        """
+        iface = getattr(self, "iface", None)
+        if not iface:
+            return
+        local_node = getattr(iface, "localNode", None)
+        if not local_node:
+            return
+
+        # Try to request channels if we don't have them yet.
+        chans = getattr(local_node, "channels", None)
+        try:
+            if (not chans) and hasattr(local_node, "requestChannels"):
+                local_node.requestChannels()
+                time.sleep(1.5)
+                chans = getattr(local_node, "channels", None)
+        except Exception:
+            chans = getattr(local_node, "channels", None)
+
+        try:
+            options = list(self.cbo_channel["values"])
+        except Exception:
+            return
+
+        # If channel 0 has a name, update the "Public" label to show it.
+        try:
+            if chans and len(chans) > 0:
+                ch0 = chans[0]
+                try:
+                    ch0_name = (getattr(ch0, "settings", None).name or "").strip()
+                except Exception:
+                    try:
+                        ch0_name = (ch0.settings.name or "").strip()
+                    except Exception:
+                        ch0_name = ""
+                if ch0_name:
+                    # Find the existing public entry (mode=broadcast, channelIndex=0)
+                    old_label = None
+                    for lbl, meta in list(self._channel_map.items()):
+                        if meta.get("mode") == "broadcast" and int(meta.get("channelIndex", 0) or 0) == 0:
+                            old_label = lbl
+                            break
+                    if old_label:
+                        new_label = f"Public (ch0: {ch0_name})"
+                        if new_label != old_label:
+                            # Update mapping
+                            self._channel_map[new_label] = self._channel_map.pop(old_label)
+                            # Update combobox options
+                            options = [new_label if v == old_label else v for v in options]
+                            # Keep current selection if it was pointing to the old label
+                            if self.channel_var.get() == old_label:
+                                self.channel_var.set(new_label)
+        except Exception:
+            # Failing to pretty-print channel 0 is not fatal; just continue.
+            pass
+
+        # Add remaining channels (1..N) as broadcast options.
+        for idx, ch in enumerate(chans or []):
+            if idx == 0:
+                # Skip channel 0 here – it's already represented by "Public".
+                continue
+            try:
+                name = (getattr(ch, "settings", None).name or "").strip()
+            except Exception:
+                # older protobufs might expose fields differently
+                try:
+                    name = (ch.settings.name or "").strip()
+                except Exception:
+                    name = ""
+            if not name:
+                label = f"Ch {idx}"
+            else:
+                label = f"Ch {idx}: {name}"
+            if label in self._channel_map:
+                continue
+            self._channel_map[label] = {"mode": "broadcast_channel", "channelIndex": idx}
+            options.append(label)
+
+        try:
+            self.cbo_channel["values"] = options
+        except Exception:
+            pass
+
+
     def send_message(self):
         msg = self.ent_message.get().strip()
         if not msg:
@@ -542,17 +675,37 @@ class MeshtasticGUI:
         if not self.iface:
             messagebox.showwarning("Not connected", "Connect first.")
             return
+
         try:
-            if self.send_to_selected.get():
+            choice = self.channel_var.get() if hasattr(self, "channel_var") else ""
+            info = (self._channel_map.get(choice) if hasattr(self, "_channel_map") else None) or {
+                "mode": "broadcast",
+                "channelIndex": 0,
+            }
+            mode = info.get("mode", "broadcast")
+            ch_index = int(info.get("channelIndex", 0) or 0)
+
+            if mode == "selected":
+                # Direct message to the currently selected node
                 nid = self._get_selected_node_id()
                 if not nid:
                     messagebox.showinfo("No selection", "Select a node first.")
                     return
-                self.iface.sendText(msg, destinationId=nid, wantAck=False)
+                dest = self._resolve_node_dest_id(nid)
+                if not dest:
+                    messagebox.showerror("Send failed", "Cannot resolve destination for selected node.")
+                    return
+                self.iface.sendText(msg, destinationId=dest, wantAck=False, channelIndex=ch_index)
                 self._append("[ME -> %s] %s" % (self._node_label(nid), msg))
             else:
-                self.iface.sendText(msg, wantAck=False)
-                self._append("[ME] %s" % msg)
+                # Broadcast on chosen channel (public or private)
+                self.iface.sendText(msg, wantAck=False, channelIndex=ch_index)
+                label = self.channel_var.get() if hasattr(self, "channel_var") else ""
+                if mode == "broadcast_channel" and ch_index:
+                    self._append("[ME ch%d] %s" % (ch_index, msg))
+                else:
+                    self._append("[ME] %s" % msg)
+
             self.ent_message.delete(0, "end")
         except Exception as e:
             messagebox.showerror("Send failed", str(e))
@@ -734,6 +887,13 @@ class MeshtasticGUI:
         fg = "#ffffff" if is_dark else "#000000"
         acc = "#2d2d2d" if is_dark else "#ffffff"
         sel = "#555555" if is_dark else "#cce0ff"
+
+        # Root window background (client area)
+        try:
+            self.root.configure(bg=bg)
+        except Exception:
+            pass
+
         style = ttk.Style(self.root)
         try:
             style.theme_use("clam")
@@ -745,10 +905,38 @@ class MeshtasticGUI:
         style.configure("TLabel", background=bg, foreground=fg)
         style.configure("TButton", background=acc, foreground=fg)
         style.configure("TEntry", fieldbackground=acc, foreground=fg)
+        style.configure("TCombobox", fieldbackground=acc, background=acc, foreground=fg, arrowcolor=fg)
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", acc)],
+            foreground=[("readonly", fg)],
+            background=[("readonly", acc)],
+        )
         style.configure("Treeview", background=acc, fieldbackground=acc, foreground=fg, borderwidth=0)
         style.map("Treeview", background=[("selected", sel)], foreground=[("selected", fg)])
+
+        # Menubar itself (stored as self.menubar when created)
         try:
-            self.txt_messages.configure(bg=acc, fg=fg, insertbackground=fg, selectbackground=sel, selectforeground=fg)
+            if hasattr(self, "menubar") and self.menubar is not None:
+                self.menubar.configure(
+                    background=bg,
+                    foreground=fg,
+                    activebackground=sel,
+                    activeforeground=fg,
+                    borderwidth=0,
+                    relief="flat",
+                )
+        except Exception:
+            pass
+
+        try:
+            self.txt_messages.configure(
+                bg=acc,
+                fg=fg,
+                insertbackground=fg,
+                selectbackground=sel,
+                selectforeground=fg,
+            )
         except Exception:
             pass
         try:
@@ -756,6 +944,12 @@ class MeshtasticGUI:
             self.root.option_add("*Menu*foreground", fg)
             self.root.option_add("*Menu*activeBackground", sel)
             self.root.option_add("*Menu*activeForeground", fg)
+            # Dark background for ttk.Combobox dropdown list
+            try:
+                self.root.option_add("*TCombobox*Listbox*background", acc)
+                self.root.option_add("*TCombobox*Listbox*foreground", fg)
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -790,6 +984,42 @@ class MeshtasticGUI:
             return
         self._append(f"[trace] Requesting traceroute to {self._node_label(nid)} ({dest})")
         threading.Thread(target=self._do_traceroute, args=(dest,), daemon=True).start()
+
+    def _cm_delete_node(self):
+        nid = self._get_selected_node_id()
+        if not nid:
+            messagebox.showinfo("Delete node", "Select a node first.")
+            return
+        if not self.iface or not getattr(self.iface, "localNode", None):
+            messagebox.showwarning("Delete node", "Connect first.")
+            return
+        dest = self._resolve_node_dest_id(nid)
+        if not dest:
+            messagebox.showerror("Delete node", "Cannot determine node ID.")
+            return
+        label = self._node_label(nid)
+        if not messagebox.askyesno(
+            "Delete node",
+            f"Remove node {label} ({dest}) from the NodeDB on the connected radio?\n\n"
+            "The device might reboot after this."
+        ):
+            return
+        try:
+            # Use python-meshtastic Node.removeNode API to remove from NodeDB
+            # https://python.meshtastic.org/node.html
+            self.iface.localNode.removeNode(dest)  # type: ignore[attr-defined]
+            self._append(f"[admin] Requested delete of node {label} ({dest})")
+        except Exception as e:
+            messagebox.showerror("Delete node", f"Failed to delete node: {e}")
+            return
+
+        # Also remove from UI for this session
+        try:
+            self.tv_nodes.delete(nid)
+            self.nodes_frame.config(text="Nodes (%d)" % len(self.tv_nodes.get_children()))
+        except Exception:
+            pass
+
 
     def _resolve_node_dest_id(self, nid: str) -> Optional[str]:
         # `nid` is the Treeview item id; in this client it normally equals the user.id (!xxxx)
@@ -960,10 +1190,13 @@ class MeshtasticGUI:
         txt.configure(state="disabled")
     def _toggle_send_target(self):
         nid = self._get_selected_node_id()
-        self.send_to_selected.set(bool(nid))
         if nid:
+            # Switch selector to "To selected node" when a node is double-clicked
+            self._set_channel_choice("To selected node")
             self._append("[target] will send to %s" % self._node_label(nid))
-
+        else:
+            # No selection -> fall back to public broadcast
+            self._set_channel_choice("Public (broadcast)")
     def _popup_node_menu(self, event):
         iid = self.tv_nodes.identify_row(event.y)
         if iid:
