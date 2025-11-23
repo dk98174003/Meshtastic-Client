@@ -6,19 +6,19 @@ This project provides an intuitive graphical interface to connect via IP, USB or
 Built entirely in **Python**, it features:
 
 * Real-time node list with shortname, longname, since, hops, dist, speed, alt, hw, role
-* Message send/receive for the channels public and direct
+* Message send/receive for the channels public, direct and private (all channels)
 * Support for light and dark themes
 * Direct IP, USB and Bluetooth connection support
 * Auto-refresh and title with node count default sort since
 * Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
 * Node count, node filter, and sorting by short name, long name, since, hops, distance, hardware, and role.
-* Right click menu on the node to Show node info, Show node on Map and Traceroute the node.
+* Right click menu on the node to Show node info, Show node on Map and Traceroute the node and delete node.
 * Send "To selected" to send direct messages.
 * Links menu to Meshtastic internet sites.
 
 Standalone Windows GUI for their Meshtastic devices.
 
-<img width="1508" height="876" alt="billede" src="https://github.com/user-attachments/assets/f973fcdd-eb3e-4dc0-bb48-4815468e1c2f" />
+<img width="1528" height="1025" alt="billede" src="https://github.com/user-attachments/assets/57298ec8-bc72-4f3c-985e-fedfcf24aa62" />
 
 ---
 ### 🧰 Installation & Setup (Windows)
