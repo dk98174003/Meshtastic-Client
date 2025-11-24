@@ -46,40 +46,17 @@ ICON_PATH = PROJECT_PATH / "meshtastic.ico"
 
 
 def _prefer_chrome(url: str):
-    """Open URL in a sensible browser on any OS.
-    On Flatpak/Linux we just use the default handler.
-    """
-    # Try system default browser first (works well in Flatpak)
-    try:
-        webbrowser.open(url)
-        return
-    except Exception:
-        pass
-
-    # Fallbacks for some common desktop setups
-    candidate_browsers = [
-        # Linux / BSD
-        "xdg-open",
-        "gio open",
-        "sensible-browser",
-        "google-chrome-stable",
-        "chromium",
-        # Windows (if someone still runs it there)
-        r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    # try Chrome first
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
     ]
-
-    for cmd in candidate_browsers:
-        try:
-            if os.path.isabs(cmd) and os.path.exists(cmd):
-                subprocess.Popen([cmd, url])
-                return
-            else:
-                # Let the shell resolve it from PATH
-                subprocess.Popen(cmd.split() + [url])
-                return
-        except Exception:
-            continue
+    for p in chrome_paths:
+        if os.path.exists(p):
+            subprocess.Popen([p, url])
+            return
+    # fallback
+    webbrowser.open(url)
 
 
 def _fmt_ago(epoch_seconds: Optional[float]) -> str:
