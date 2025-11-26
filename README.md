@@ -12,13 +12,12 @@ Built entirely in **Python**, it features:
 * Auto-refresh and title with node count default sort since
 * Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
 * Node count, node filter, and sorting by short name, long name, since, hops, distance, hardware, and role.
-* Right click menu on the node to Show node info, Show node on Map and Traceroute the node and delete node.
-* Send "To selected" to send direct messages.
+* Right click menu on the node to Show node info, Show node on Map and Traceroute the node, delete node, direct node chat.
 * Links menu to Meshtastic internet sites.
 
 Standalone Windows GUI for their Meshtastic devices.
 
-<img width="1528" height="1025" alt="billede" src="https://github.com/user-attachments/assets/57298ec8-bc72-4f3c-985e-fedfcf24aa62" />
+<img width="2236" height="1030" alt="image" src="https://github.com/user-attachments/assets/f8b29d5b-f931-4555-b248-3f933ab3c245" />
 
 ---
 ### 🧰 Installation & Setup (Windows)
