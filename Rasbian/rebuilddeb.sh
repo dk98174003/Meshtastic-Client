@@ -4,7 +4,7 @@
 
 APP_NAME="meshtastic-client"
 APP_VERSION=$(date +"1.0.%Y%m%d%H%M")
-PROJECT_DIR="/home/knud/Desktop/Meshtastic/Meshtastic_client"
+PROJECT_DIR="/home/pi/Desktop/Meshtastic/Meshtastic_client"
 BUILD_DIR="$PROJECT_DIR/build"
 ICON_NAME="meshtastic.png"
 
