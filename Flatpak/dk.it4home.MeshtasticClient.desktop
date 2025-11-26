@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Meshtastic Client
+Exec=meshtastic-client
+Icon=dk.it4home.MeshtasticClient
+Type=Application
+Categories=Network;Utility;
+
