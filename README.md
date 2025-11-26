@@ -22,6 +22,7 @@ Standalone Windows GUI for their Meshtastic devices.
 ---
 ### 🧰 Installation & Setup (Windows)
 You can also download the ready to use Mestastic_Client.exe or the .deb file to install it on Linux Mint 22 or Debian 13.
+New also a flatpak is available for other linux distributions.
 ---
 
 1. **Install Python 3.10 or newer**
