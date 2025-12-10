@@ -4,7 +4,6 @@ Comment=Meshtastic Desktop Client
 Exec=meshtastic-client
 Terminal=false
 Type=Application
-Icon=meshtastic
+Icon=meshtastic-client
 Categories=Network;Utility;
 NoDisplay=false
-
