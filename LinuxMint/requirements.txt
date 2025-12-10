@@ -1,4 +1,5 @@
 meshtastic
 pyserial
-bleak
+pypubsub
 protobuf
+bleak
