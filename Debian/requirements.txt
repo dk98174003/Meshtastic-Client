@@ -1,0 +1,7 @@
+meshtastic
+pyserial
+pypubsub
+protobuf
+bleak
+google protobuf
+
