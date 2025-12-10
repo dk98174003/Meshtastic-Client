@@ -1,7 +1,0 @@
-#!/bin/bash
-cd /home/knud/Desktop/Meshtastic/Meshtastic_client || exit
-set -a
-source .envrc
-set +a
-python3 meshtastic_client.py
-
