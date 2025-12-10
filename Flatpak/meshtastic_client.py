@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 from __future__ import annotations
 import json, time, datetime, threading, pathlib, tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
@@ -833,7 +833,8 @@ class MeshtasticGUI:
             shortname = user.get("shortName") or ""
             longname = user.get("longName") or ""
             hwmodel = user.get("hwModel") or ""
-            role = user.get("role") or ""
+            role_raw = user.get("role") or ""
+            role = role_raw if role_raw.strip() else "CLIENT"
             macaddr = user.get("macaddr") or ""
             publickey = user.get("publicKey") or ""
             unmsg = user.get("isUnmessagable") or user.get("isUnmessageable") or False
