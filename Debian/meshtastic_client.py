@@ -833,7 +833,8 @@ class MeshtasticGUI:
             shortname = user.get("shortName") or ""
             longname = user.get("longName") or ""
             hwmodel = user.get("hwModel") or ""
-            role = user.get("role") or ""
+            role_raw = user.get("role") or ""
+            role = role_raw if role_raw.strip() else "CLIENT"
             macaddr = user.get("macaddr") or ""
             publickey = user.get("publicKey") or ""
             unmsg = user.get("isUnmessagable") or user.get("isUnmessageable") or False
