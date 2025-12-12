@@ -196,11 +196,27 @@ class MeshtasticGUI:
         self.rootframe = ttk.Frame(self.root)
         self.rootframe.grid(row=0, column=0, sticky="nsew")
         self.rootframe.rowconfigure(0, weight=1)
+        self.rootframe.rowconfigure(1, weight=0)
         self.rootframe.columnconfigure(0, weight=1)
 
         self.paned = ttk.Panedwindow(self.rootframe, orient="horizontal")
         self.paned.grid(row=0, column=0, sticky="nsew")
 
+
+        # Status bar (keeps non-chat info out of the Messages area)
+        self.status_conn_var = tk.StringVar(value="Conn: Disconnected")
+        self.status_pos_var = tk.StringVar(value="POS: -")
+        self.status_tel_var = tk.StringVar(value="TEL: -")
+        self.status_info_var = tk.StringVar(value="")
+
+        self.statusbar = ttk.Frame(self.rootframe, padding=(6, 2))
+        self.statusbar.grid(row=1, column=0, sticky="ew")
+        self.statusbar.columnconfigure(3, weight=1)
+
+        ttk.Label(self.statusbar, textvariable=self.status_conn_var).grid(row=0, column=0, sticky="w", padx=(0, 12))
+        ttk.Label(self.statusbar, textvariable=self.status_pos_var).grid(row=0, column=1, sticky="w", padx=(0, 12))
+        ttk.Label(self.statusbar, textvariable=self.status_tel_var).grid(row=0, column=2, sticky="w", padx=(0, 12))
+        ttk.Label(self.statusbar, textvariable=self.status_info_var).grid(row=0, column=3, sticky="ew")
         # Messages pane
         self.msg_frame = ttk.Frame(self.paned)
         self.msg_frame.rowconfigure(1, weight=1)
@@ -344,7 +360,7 @@ class MeshtasticGUI:
         # Load persisted settings (from ./meshtastic_client_settings.json) if present
         self.load_settings(silent=True)
         self.apply_theme(self.current_theme)
-        self._append("Ready. Connection -> Connect (TCP/USB/BLE)")
+        self._status_update(info="Ready. Connection -> Connect (TCP/USB/BLE)")
         self._update_title_with_host()
 
     # UI helpers ------------------------------------------------------
@@ -354,6 +370,30 @@ class MeshtasticGUI:
             fn(*args, **kwargs)
         else:
             self.root.after(0, lambda: fn(*args, **kwargs))
+
+    def _status_update(self, *, conn: Optional[str] = None, pos: Optional[str] = None, tel: Optional[str] = None, info: Optional[str] = None):
+        """Update the bottom status bar (UI thread safe)."""
+        def _do():
+            ts = time.strftime("%H:%M:%S")
+            if conn is not None:
+                self.status_conn_var.set(f"Conn: {conn}")
+            if pos is not None:
+                self.status_pos_var.set(f"POS: {pos} @{ts}" if pos != "-" else "POS: -")
+            if tel is not None:
+                self.status_tel_var.set(f"TEL: {tel} @{ts}" if tel != "-" else "TEL: -")
+            if info is not None:
+                self.status_info_var.set(f"{info} @{ts}" if info else "")
+        self._ui(_do)
+
+    def _status_event(self, kind: str, label: str):
+        """Convenience for updating POS/TEL and other packet status."""
+        kind = (kind or "").upper().strip()
+        if kind == "POS":
+            self._status_update(pos=label)
+        elif kind == "TEL":
+            self._status_update(tel=label)
+        else:
+            self._status_update(info=f"{kind}: {label}" if kind else label)
 
     def clear_messages(self):
         self._ui(lambda: self.txt_messages.delete("1.0", "end"))
@@ -387,7 +427,7 @@ class MeshtasticGUI:
         if self.connected_evt.is_set():
             return
         self.connected_evt.set()
-        self._append("[+] Connected")
+        self._status_update(conn="Connected", info="Connected")
         self.refresh_nodes()
         try:
             self._update_channels_from_iface()
@@ -400,7 +440,7 @@ class MeshtasticGUI:
     def on_connection_lost(self, interface=None, **kwargs):
         def _lost():
             self.connected_evt.clear()
-            self._append("[-] Connection lost")
+            self._status_update(conn="Disconnected", info="Connection lost")
         self._ui(_lost)
 
     def on_node_updated(self, node=None, interface=None, **kwargs):
@@ -490,7 +530,7 @@ class MeshtasticGUI:
             }
             tag = tag_map.get(str(app_name or portnum), "INFO")
             # Avoid spamming for every non-text packet; show only brief line
-            self._append(f"[{tag}] {label}")
+            self._status_event(tag, label)
 
         self.refresh_nodes()
 
@@ -499,10 +539,10 @@ class MeshtasticGUI:
             return
         try:
             self.iface.sendText("pong", destinationId=dest_id, wantAck=False)
-            self._append(f"[auto] pong -> {label}")
+            self._status_update(info=f"auto pong -> {label}")
             self._append_to_node_chat(str(dest_id), "[auto] pong")
         except Exception as e:
-            self._append(f"[auto] pong failed: {e}")
+            self._status_update(info=f"auto pong failed: {e}")
 
     # connection actions ----------------------------------------------
     def set_ip_port(self):
@@ -573,7 +613,7 @@ class MeshtasticGUI:
         if SerialInterface is None:
             self._ui(lambda: messagebox.showerror("Unavailable", "meshtastic.serial_interface not installed."))
             return
-        self._append(f"Connecting Serial {port or '(auto)'} ...")
+        self._status_update(conn="Connecting (Serial)", info=f"Connecting Serial {port or '(auto)'}...")
 
         def run():
             try:
@@ -594,7 +634,7 @@ class MeshtasticGUI:
         if BLEInterface is None:
             self._ui(lambda: messagebox.showerror("Unavailable", "meshtastic.ble_interface not installed (needs bleak)."))
             return
-        self._append(f"Connecting BLE {address} ...")
+        self._status_update(conn="Connecting (BLE)", info=f"Connecting BLE {address}...")
 
         def run():
             try:
@@ -618,7 +658,7 @@ class MeshtasticGUI:
         except Exception:
             messagebox.showerror("Port", "Invalid port")
             return
-        self._append(f"Connecting TCP {host}:{port} ...")
+        self._status_update(conn="Connecting (TCP)", info=f"Connecting TCP {host}:{port}...")
 
         def run():
             try:
@@ -675,7 +715,7 @@ class MeshtasticGUI:
         if BLEInterface is None:
             messagebox.showerror("Unavailable", "meshtastic.ble_interface not installed (needs bleak).")
             return
-        self._append("Scanning BLE for Meshtastic devices ...")
+        self._status_update(conn="Scanning BLE", info="Scanning BLE for Meshtastic devices...")
         try:
             devices = BLEInterface.scan()
         except Exception as e:
@@ -717,7 +757,7 @@ class MeshtasticGUI:
             pass
         self.iface = None
         self.connected_evt.clear()
-        self._append("[*] Disconnected")
+        self._status_update(conn="Disconnected", info="Disconnected")
 
     # send ------------------------------------------------------------
     def _reset_channel_choices(self):
@@ -1312,7 +1352,7 @@ class MeshtasticGUI:
         if not dest:
             messagebox.showerror("Traceroute", "Cannot determine node ID for traceroute.")
             return
-        self._append(f"[trace] Requesting traceroute to {self._node_label(nid)} ({dest})")
+        self._status_update(info=f"Traceroute -> {self._node_label(nid)} ({dest})")
         threading.Thread(target=self._do_traceroute, args=(dest,), daemon=True).start()
 
     def _cm_delete_node(self):
@@ -1338,7 +1378,7 @@ class MeshtasticGUI:
 
         try:
             self.iface.localNode.removeNode(dest)  # type: ignore[attr-defined]
-            self._append(f"[admin] Requested delete of node {label} ({dest})")
+            self._status_update(info=f"Admin: delete requested for {label} ({dest})")
         except Exception as e:
             messagebox.showerror("Delete node", f"Failed to delete node: {e}")
             return
@@ -1700,7 +1740,7 @@ class MeshtasticGUI:
                 elif hasattr(ch, "name"):
                     ch.name = new_name
                 ln.writeChannel(i)
-                self._append(f"[admin] Renamed channel {i} to '{new_name}'")
+                self._status_update(info=f"Admin: renamed channel {i} to '{new_name}'")
                 self._update_channels_from_iface()
                 listbox.delete(i)
                 label = f"{i}: {new_name or '(no name)'}"
@@ -1811,7 +1851,7 @@ class MeshtasticGUI:
 
         self._update_title_with_host()
         if not silent:
-            self._append(f"[settings] Loaded from {path}")
+            self._status_update(info=f"Settings loaded from {path}")
 
     def save_settings(self, silent: bool = False) -> None:
         """Save settings to JSON in the current working directory ('.')."""

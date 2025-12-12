@@ -7,6 +7,6 @@
   "ble_address": "",
   "theme": "dark",
   "channel_choice": "Public (broadcast)",
-  "window_geometry": "1500x820+201+355",
-  "sash_fraction": 0.4
+  "window_geometry": "1585x961+240+220",
+  "sash_fraction": 0.38296529968454257
 }
