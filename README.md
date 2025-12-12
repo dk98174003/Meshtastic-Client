@@ -7,17 +7,18 @@ Built entirely in **Python**, it features:
 
 * Real-time node list with shortname, longname, since, hops, dist, speed, alt, hw, role
 * Message send/receive for the channels public, direct and private (all channels)
-* Support for light and dark themes
+* Support for light and dark themes and config save.
 * Direct IP, USB and Bluetooth connection support
 * Auto-refresh and title with node count default sort since
 * Automatic “Ping → Pong” reply function — the client automatically responds to incoming “ping” with “pong” on a direct message
 * Node count, node filter, and sorting by short name, long name, since, hops, distance, hardware, and role.
-* Right click menu on the node to Show node info, Show node on Map and Traceroute the node, delete node, direct node chat.
+* Right click menu on the node to Show node info, Show node on Map and Traceroute the node, delete node, direct node chat in window.
 * Links menu to Meshtastic internet sites.
+* Status bar with POS, TEL, INFO.
 
 Standalone Windows GUI for their Meshtastic devices.
 
-<img width="2236" height="1030" alt="image" src="https://github.com/user-attachments/assets/f8b29d5b-f931-4555-b248-3f933ab3c245" />
+<img width="1801" height="1100" alt="image" src="https://github.com/user-attachments/assets/53b3b18a-edd2-45fb-8ac3-9eb901b2acde" />
 
 ---
 ### 🧰 Installation & Setup (Windows)
