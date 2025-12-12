@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "host": "192.168.0.156",
+  "port": 4403,
+  "connection_type": "tcp",
+  "serial_port": "",
+  "ble_address": "",
+  "theme": "dark",
+  "channel_choice": "Public (broadcast)",
+  "window_geometry": "1500x820+201+355",
+  "sash_fraction": 0.4
+}
