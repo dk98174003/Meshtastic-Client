@@ -147,5 +147,6 @@ python3 meshtastic_client.py
 Have fun
 
 PS. Use IP or serial - bluetooth is slow.
+PPS. tkinter must be installed to run the program.
 
 Knud ;O)
